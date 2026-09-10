@@ -12,7 +12,7 @@
   body { margin:0; font-family:'Inter',sans-serif; color:#1a2420; }
   h1,h2,h3 { font-family:'Source Serif 4',Georgia,serif; margin:0; }
 
-  .layout { display:grid; grid-template-columns: 440px 1fr; height:100vh; }
+  .layout { display:grid; grid-template-columns: 480px 1fr; height:100vh; }
   .intro {
     background:#12241f; color:#e8ece9; padding:28px 26px;
     overflow-y:auto; display:flex; flex-direction:column; gap:16px;
@@ -56,8 +56,8 @@
   }
   .county-label::before { display:none; }
 
-  @media (max-width: 900px) {
-    .layout { grid-template-columns: 320px 1fr; }
+  @media (max-width: 700px) {
+    .layout { grid-template-columns: 340px 1fr; }
   }
 </style>
 </head>
@@ -165,58 +165,78 @@ function showDetail(name) {
     html += "<div class='stage-group'><div class='stage-group-title'>Response conditions identified</div>";
     c.triggers.forEach(t => {
       html += "<div class='trig'>";
-      html += "<div class='flow'>If <span class='tag'>" + escapeHtml(t.indicator) + "</span> reaches <span class='tag'>" + escapeHtml(t.threshold) + "</span>:</div>";
-      html += "<div class='resp'><b>Response:</b> " + escapeHtml(t.response) + "</div>";
+      html += "<div class='flow'><b style='color:#cfa15c;'>Indicator:</b> " + escapeHtml(t.indicator) + "</div>";
+      html += "<div class='flow' style='margin-top:5px;'><b style='color:#cfa15c;'>Threshold:</b> " + escapeHtml(t.threshold) + "</div>";
+      html += "<div class='resp'><b>Response action:</b> " + escapeHtml(t.response) + "</div>";
       html += "<div class='page'>Source: plan p." + escapeHtml(t.page) + "</div>";
       html += "</div>";
     });
     html += "</div>";
   } else {
     const groups = groupByStageOrder(c.triggers);
-    groups.forEach(g => {
-      const matchedStage = findStageType(g.label, stageDef ? stageDef.stages : null);
-      let typeTag = "";
-      if (matchedStage) {
-        const cls = matchedStage.type === "Baseline" ? "origin-local" : "origin-state";
-        typeTag = " <span class='tag " + cls + "' style='margin-left:8px;'>" + escapeHtml(matchedStage.type) + "</span>";
-      }
+
+    // Merge trigger-derived groups with real stage definitions into one list,
+    // sorted by actual stage order, so a Baseline stage with zero trigger rows
+    // (e.g. Stage 1) still appears FIRST, not appended at the end.
+    const sections = [];
+    const usedGroupIdx = new Set();
+
+    if (stageDef && stageDef.stages && stageDef.stages.length) {
+      stageDef.stages.forEach(sd => {
+        const sdNameLower = (sd.name || "").toLowerCase();
+        let matchedGroup = null;
+        groups.forEach((g, i) => {
+          if (usedGroupIdx.has(i)) return;
+          const gl = g.label.toLowerCase();
+          if (gl.includes(sdNameLower) || sdNameLower.includes(gl)) {
+            matchedGroup = g;
+            usedGroupIdx.add(i);
+          }
+        });
+        sections.push({
+          order: parseFloat(sd.order) || 999,
+          label: sd.name,
+          type: sd.type,
+          definition: sd.definition,
+          items: matchedGroup ? matchedGroup.items : []
+        });
+      });
+      // any trigger groups that didn't match a known stage definition, append after
+      groups.forEach((g, i) => {
+        if (!usedGroupIdx.has(i)) {
+          sections.push({ order: 999 + i, label: g.label, type: null, definition: null, items: g.items });
+        }
+      });
+    } else {
+      // no stage definitions available at all, just use trigger-derived order as-is
+      groups.forEach((g, i) => {
+        sections.push({ order: i, label: g.label, type: null, definition: null, items: g.items });
+      });
+    }
+
+    sections.sort((a, b) => a.order - b.order);
+
+    sections.forEach(sec => {
+      const cls = sec.type === "Baseline" ? "origin-local" : (sec.type === "Triggered" ? "origin-state" : "");
+      const typeTag = sec.type ? " <span class='tag " + cls + "' style='margin-left:8px;'>" + escapeHtml(sec.type) + "</span>" : "";
       html += "<div class='stage-group'>";
-      html += "<div class='stage-group-title'>" + escapeHtml(g.label) + typeTag + "</div>";
-      if (matchedStage) {
-        html += "<div style='font-size:12px;color:#a9b6b0;margin-bottom:8px;font-style:italic;'>" + escapeHtml(matchedStage.definition) + "</div>";
+      html += "<div class='stage-group-title'>" + escapeHtml(sec.label) + typeTag + "</div>";
+      if (sec.definition) {
+        html += "<div style='font-size:12px;color:#a9b6b0;margin-bottom:8px;font-style:italic;'>" + escapeHtml(sec.definition) + "</div>";
       }
-      if (matchedStage && matchedStage.type === "Baseline" && g.items.length === 0) {
+      if (sec.type === "Baseline" && sec.items.length === 0) {
         html += "<div class='stage-missing'>This is the plan's default/resting state. No specific measurable condition is required to enter it &mdash; the county returns here when no other stage's conditions are met.</div>";
       }
-      g.items.forEach(t => {
+      sec.items.forEach(t => {
         html += "<div class='trig'>";
-        html += "<div class='flow'>If <span class='tag'>" + escapeHtml(t.indicator) + "</span> reaches <span class='tag'>" + escapeHtml(t.threshold) + "</span>:</div>";
-        html += "<div class='resp'><b>Response:</b> " + escapeHtml(t.response) + "</div>";
+        html += "<div class='flow'><b style='color:#cfa15c;'>Indicator:</b> " + escapeHtml(t.indicator) + "</div>";
+        html += "<div class='flow' style='margin-top:5px;'><b style='color:#cfa15c;'>Threshold:</b> " + escapeHtml(t.threshold) + "</div>";
+        html += "<div class='resp'><b>Response action:</b> " + escapeHtml(t.response) + "</div>";
         html += "<div class='page'>Source: plan p." + escapeHtml(t.page) + "</div>";
         html += "</div>";
       });
       html += "</div>";
     });
-
-    // If we have real stage definitions showing a Baseline stage that produced zero trigger rows
-    // (e.g. Alpine, Sutter's Stage 1), and it's not already shown above because it had no matching
-    // trigger group at all, show it explicitly rather than silently omitting it.
-    if (stageDef && stageDef.stages) {
-      const shownLabels = groups.map(g => g.label.toLowerCase());
-      stageDef.stages.forEach(sd => {
-        const already = shownLabels.some(l => l.includes((sd.name||"").toLowerCase()) || (sd.name||"").toLowerCase().includes(l));
-        if (!already) {
-          const cls = sd.type === "Baseline" ? "origin-local" : "origin-state";
-          html += "<div class='stage-group'>";
-          html += "<div class='stage-group-title'>" + escapeHtml(sd.name) + " <span class='tag " + cls + "' style='margin-left:8px;'>" + escapeHtml(sd.type) + "</span></div>";
-          html += "<div style='font-size:12px;color:#a9b6b0;margin-bottom:8px;font-style:italic;'>" + escapeHtml(sd.definition) + "</div>";
-          if (sd.type === "Baseline") {
-            html += "<div class='stage-missing'>This is the plan's default/resting state. No specific measurable condition is required to enter it.</div>";
-          }
-          html += "</div>";
-        }
-      });
-    }
   }
 
   el.innerHTML = html;
