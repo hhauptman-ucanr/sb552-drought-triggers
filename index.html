@@ -70,7 +70,8 @@
     </div>
     <div class="intro-block">
       <h3>What is SB 552?</h3>
-      <p><a href="https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202120220SB552" target="_blank" style="color:#cfa15c;">California Senate Bill 552</a>, signed into law September 23, 2021, directs counties to establish a drought task force and plan for their State Small Water Systems (SSWSs) and domestic wells, households not served by a city water utility. Each plan defines how the county will recognize drought and what it will do about it.</p>
+      <p><a href="https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202120220SB552" target="_blank" style="color:#cfa15c;">California Senate Bill 552</a>, signed into law September 23, 2021, directs counties to establish a drought task force and plan for their State Small Water Systems (SSWSs) and domestic wells, households not served by a city water utility. Each plan defines how the county will recognize drought and what planned actions it will take in response.</p>
+      <p>To do this, most plans identify specific "triggers", measurable conditions like a drought severity rating, a number of dry well reports, or a groundwater level, that move a county into a higher level of concern and set off a defined response, like distributing emergency water or expediting well permits.</p>
     </div>
     <div class="glossary">
       <h3 style="color:#cfa15c; text-transform:uppercase; font-size:12px; letter-spacing:.05em; font-family:'Inter',sans-serif; font-weight:600; margin-bottom:6px;">Key Terms</h3>
@@ -85,8 +86,8 @@
       <p>Click any county to see its triggers, grouped by stage in the order they escalate.</p>
     </div>
     <div class="intro-block">
-      <h3>Data Source</h3>
-      <p>Published Drought Resiliance Plans (DRPs): <a href="https://cadwr.app.box.com/s/1rh6vjeq4p5e46apnaunxo4ccys0rppj" target="_blank">CA DWR SB 552 Plans (Box) &rarr;</a></p>
+      <h3>Official source</h3>
+      <p>All published plans: <a href="https://cadwr.app.box.com/s/1rh6vjeq4p5e46apnaunxo4ccys0rppj" target="_blank">CA DWR SB 552 Plans (Box) &rarr;</a></p>
     </div>
     <div class="intro-block">
       <h3>Download the data</h3>
@@ -222,7 +223,6 @@ function showDetail(name) {
 
   let html = "<h2>" + escapeHtml(c.name) + "</h2>";
   html += "<div class='def'>" + escapeHtml(c.definition) + "</div>";
-  html += "<div class='source-link'><a href='" + SOURCE_URL + "' target='_blank'>View official SB 552 county plans &rarr;</a></div>";
   html += "<div class='source-link'><a href='#' onclick='downloadCountyCSV(" + JSON.stringify(c.name).replace(/"/g, "&quot;") + "); return false;'>Download this county's triggers (CSV) &darr;</a></div>";
 
   if (stageDef && (stageDef.framework === "no_framework" || stageDef.framework === "different_format")) {
