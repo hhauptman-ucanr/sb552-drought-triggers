@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>California SB 552 Drought Trigger Map</title>
+<title>California Drought Trigger Map</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -65,14 +65,15 @@
 <div class="layout">
   <div class="intro">
     <div>
-      <h1>SB 552 Drought Trigger Map</h1>
-      <div class="sub">California county drought resilience plans, mapped</div>
+      <h1>California Drought Trigger Map</h1>
+      <div class="sub">Drought triggers, thresholds, and response actions from California's published SB 552 county drought plans</div>
     </div>
     <div class="intro-block">
       <h3>What is SB 552?</h3>
-      <p>California Senate Bill 552 requires every county to adopt a Drought Resilience Plan covering State Small Water Systems (SSWSs) and domestic wells, households not served by a city water utility. Each plan defines how the county will recognize drought and what it will do about it.</p>
+      <p><a href="https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202120220SB552" target="_blank" style="color:#cfa15c;">California Senate Bill 552</a>, signed into law September 23, 2021, directs counties to establish a drought task force and plan for their State Small Water Systems (SSWSs) and domestic wells, households not served by a city water utility. Each plan defines how the county will recognize drought and what it will do about it.</p>
     </div>
     <div class="glossary">
+      <h3 style="color:#cfa15c; text-transform:uppercase; font-size:12px; letter-spacing:.05em; font-family:'Inter',sans-serif; font-weight:600; margin-bottom:6px;">Key Terms</h3>
       <div class="gloss-row"><b>Trigger</b> &mdash; the combination of an indicator crossing a threshold that moves a county into a new drought stage and activates a specific response.</div>
       <div class="gloss-row"><b>Indicator</b> &mdash; what the county measures (e.g. groundwater level, dry well reports).</div>
       <div class="gloss-row"><b>Threshold</b> &mdash; the specific value or condition that must be met.</div>
@@ -88,12 +89,8 @@
       <p>All published plans: <a href="https://cadwr.app.box.com/s/1rh6vjeq4p5e46apnaunxo4ccys0rppj" target="_blank">CA DWR SB 552 Plans (Box) &rarr;</a></p>
     </div>
     <div class="intro-block">
-      <h3>Groundwater basin priority</h3>
-      <p><label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-        <input type="checkbox" id="basinToggle" style="width:15px;height:15px;">
-        Show SGMA basin priority overlay
-      </label></p>
-      <div id="basinLegend" style="display:none; margin-top:8px; font-size:11.5px;"></div>
+      <h3>Download the data</h3>
+      <p><a href="#" onclick="downloadAllCSV(); return false;">Download all 48 counties' triggers (CSV) &darr;</a></p>
     </div>
     <div id="detail"></div>
   </div>
@@ -107,6 +104,7 @@
 <div id="glossaryPanel" style="display:none; position:fixed; top:0; right:0; width:380px; height:100vh; background:#12241f; color:#e8ece9; z-index:999; box-shadow:-4px 0 16px rgba(0,0,0,.3); overflow-y:auto; font-family:'Inter',sans-serif;">
   <div style="padding:60px 26px 30px;">
     <h2 style="font-family:'Source Serif 4',Georgia,serif; font-size:19px; margin:0 0 16px;">Glossary &amp; Acronyms</h2>
+    <div style="font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:#cfa15c; font-weight:600; margin-bottom:10px;">Key Terms</div>
     <div style="border-bottom:1px solid rgba(255,255,255,.15); padding-bottom:14px; margin-bottom:14px;">
       <div style="margin-bottom:8px; font-size:13px; line-height:1.45;"><b style="color:#fff;">Trigger</b> &mdash; the combination of an indicator crossing a threshold that moves a county into a new drought stage and activates a specific response.</div>
       <div style="margin-bottom:8px; font-size:13px; line-height:1.45;"><b style="color:#fff;">Indicator</b> &mdash; what the county measures (e.g. groundwater level, dry well reports).</div>
@@ -114,6 +112,7 @@
       <div style="margin-bottom:8px; font-size:13px; line-height:1.45;"><b style="color:#fff;">Stage</b> &mdash; the drought severity level the county enters once the threshold is met.</div>
       <div style="font-size:13px; line-height:1.45;"><b style="color:#fff;">Response action</b> &mdash; what the county actually does once that stage is reached.</div>
     </div>
+    <div style="font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:#cfa15c; font-weight:600; margin-bottom:10px;">Acronyms</div>
     <div id="acronymList"></div>
   </div>
 </div>
@@ -132,6 +131,31 @@ const map = L.map('map', { zoomControl: true }).setView([37.2, -119.3], 6);
 let activeLayer = null;
 const defaultStyle = { color:"#3b5a72", weight:1, fillColor:"#8fa8b3", fillOpacity:0.35 };
 const activeStyle = { color:"#8c5a2b", weight:2, fillColor:"#cfa15c", fillOpacity:0.5 };
+
+function downloadAllCSV() {
+  const headers = ["County", "Indicator", "Threshold", "Stage", "Response Action", "Page"];
+  const rows = [headers];
+  TRIGGER_DATA.forEach(c => {
+    c.triggers.forEach(t => {
+      rows.push([c.name, t.indicator, t.threshold, t.stage, t.response, t.page]);
+    });
+  });
+  const csv = rows.map(row =>
+    row.map(cell => {
+      const s = String(cell === undefined || cell === null ? "" : cell);
+      return '"' + s.replace(/"/g, '""') + '"';
+    }).join(",")
+  ).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "All_Counties_Drought_Triggers.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 function downloadCountyCSV(name) {
   const c = dataByCounty[name.replace(" County", "")];
@@ -371,72 +395,6 @@ glossaryToggle.addEventListener("click", () => {
   const isOpen = glossaryPanel.style.display === "block";
   glossaryPanel.style.display = isOpen ? "none" : "block";
   glossaryToggle.textContent = isOpen ? "Glossary & Acronyms" : "Close Glossary";
-});
-
-// --- SGMA Groundwater Basin Priority Overlay (loaded live from CA DWR) ---
-const BASIN_SERVICE_URL = "https://gis.water.ca.gov/arcgis/rest/services/Geoscientific/i08_B118_SGMA_2019_Basin_Prioritization/FeatureServer/0/query?where=1%3D1&outFields=*&f=geojson";
-
-const priorityColors = {
-  "high": "#b0472f",
-  "medium": "#c98f3a",
-  "low": "#6b8f6a",
-  "very low": "#3b6a82"
-};
-
-function priorityColor(props) {
-  const candidates = ["Basin_Prioritization", "Priority", "BASIN_PRIORITY", "PRIORITY", "Basin_Priority", "GWBasinPriority"];
-  let val = null;
-  for (const key of candidates) {
-    if (props[key]) { val = props[key]; break; }
-  }
-  if (!val) return "#999999";
-  const v = String(val).toLowerCase();
-  if (v.includes("very low")) return priorityColors["very low"];
-  if (v.includes("high")) return priorityColors["high"];
-  if (v.includes("medium")) return priorityColors["medium"];
-  if (v.includes("low")) return priorityColors["low"];
-  return "#999999";
-}
-
-let basinLayer = null;
-let basinLoaded = false;
-
-document.getElementById("basinToggle").addEventListener("change", async (e) => {
-  const legend = document.getElementById("basinLegend");
-  if (e.target.checked) {
-    if (!basinLoaded) {
-      try {
-        const resp = await fetch(BASIN_SERVICE_URL);
-        const geo = await resp.json();
-        basinLayer = L.geoJSON(geo, {
-          style: (feature) => ({
-            color: "#555",
-            weight: 0.5,
-            fillColor: priorityColor(feature.properties),
-            fillOpacity: 0.45
-          })
-        });
-        basinLoaded = true;
-      } catch (err) {
-        console.error("Could not load basin priority layer:", err);
-        legend.style.display = "block";
-        legend.innerHTML = "<span style='color:#e08a6f;'>Could not load basin data from DWR right now.</span>";
-        e.target.checked = false;
-        return;
-      }
-    }
-    basinLayer.addTo(map);
-    basinLayer.bringToBack();
-    legend.style.display = "block";
-    legend.innerHTML =
-      "<div style='display:flex;align-items:center;gap:6px;margin-bottom:3px;'><span style='width:11px;height:11px;background:#b0472f;display:inline-block;border-radius:2px;'></span>High priority</div>" +
-      "<div style='display:flex;align-items:center;gap:6px;margin-bottom:3px;'><span style='width:11px;height:11px;background:#c98f3a;display:inline-block;border-radius:2px;'></span>Medium priority</div>" +
-      "<div style='display:flex;align-items:center;gap:6px;margin-bottom:3px;'><span style='width:11px;height:11px;background:#6b8f6a;display:inline-block;border-radius:2px;'></span>Low priority</div>" +
-      "<div style='display:flex;align-items:center;gap:6px;'><span style='width:11px;height:11px;background:#3b6a82;display:inline-block;border-radius:2px;'></span>Very low priority</div>";
-  } else {
-    if (basinLayer) map.removeLayer(basinLayer);
-    legend.style.display = "none";
-  }
 });
 
 </script>
