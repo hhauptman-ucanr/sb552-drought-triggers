@@ -99,7 +99,7 @@
 </div>
 
 
-<div id="countyPanel" style="display:none; position:fixed; top:0; right:0; width:380px; height:100vh; background:#16232e; color:#e8ece9; z-index:998; box-shadow:-4px 0 16px rgba(0,0,0,.3); overflow-y:auto; font-family:'Inter',sans-serif; padding:26px 24px;"></div>
+<div id="countyPanel" style="display:none; position:fixed; top:0; right:0; width:380px; height:100vh; background:#2b2118; color:#e8ece9; z-index:998; box-shadow:-4px 0 16px rgba(0,0,0,.3); overflow-y:auto; font-family:'Inter',sans-serif; padding:26px 24px;"></div>
 <div id="countyPanelResizer" style="display:none; position:fixed; top:0; right:380px; width:6px; height:100vh; cursor:ew-resize; z-index:999; background:transparent;"></div>
 <button id="countyPanelClose" onclick="clearSelection()" style="display:none; position:fixed; top:16px; right:16px; z-index:1000; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.25); color:#e8ece9; width:28px; height:28px; border-radius:4px; cursor:pointer; font-size:16px; line-height:1;">&times;</button>
 
@@ -258,8 +258,7 @@ function showDetail(name) {
   const key = name;
   const stageDef = STAGE_DEFS[key];
 
-  let html = "<button onclick='clearSelection(); return false;' style='background:none; border:1px solid rgba(255,255,255,.3); color:#d7ddd9; font-size:11.5px; padding:5px 10px; border-radius:3px; cursor:pointer; margin-bottom:16px; font-family:\'Inter\',sans-serif;'>&larr; Back to all counties</button>";
-  html += "<h2>" + escapeHtml(c.name) + "</h2>";
+  let html = "<h2 style='margin-top:20px;'>" + escapeHtml(c.name) + "</h2>";
   html += "<div class='field-label' style='margin-top:10px;'>Drought Definition</div>";
   html += "<div class='def'>" + escapeHtml(c.definition) + "</div>";
   html += "<div class='source-link'><a href='#' onclick='downloadCountyCSV(" + JSON.stringify(c.name).replace(/"/g, "&quot;") + "); return false;'>Download this county's triggers (CSV) &darr;</a></div>";
