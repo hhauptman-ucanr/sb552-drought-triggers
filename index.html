@@ -25,6 +25,7 @@
   .glossary { border-top:1px solid rgba(255,255,255,.15); border-bottom:1px solid rgba(255,255,255,.15); padding:14px 0; }
   .gloss-row { margin-bottom:8px; font-size:13px; line-height:1.45; }
   .gloss-row b { color:#fff; }
+  .field-label { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:#8a9791; font-weight:600; margin-bottom:4px; }
 
   #detail { display:none; }
   #detail.show { display:block; }
@@ -70,7 +71,7 @@
     </div>
     <div class="intro-block">
       <h3>What is SB 552?</h3>
-      <p><a href="https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202120220SB552" target="_blank" style="color:#cfa15c;">California Senate Bill 552</a>, signed into law September 23, 2021, directs counties to establish a drought task force and plan for their State Small Water Systems and domestic wells, households not served by a city water utility. Each plan defines how the county will recognize drought and what planned actions it will take in response.</p>
+      <p><a href="https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202120220SB552" target="_blank" style="color:#cfa15c;">California Senate Bill 552</a>, signed into law September 23, 2021, directs counties to establish a drought task force and plan for their State Small Water Systems (SSWSs) and domestic wells, households not served by a city water utility. Each plan defines how the county will recognize drought and what planned actions it will take in response.</p>
       <p style="margin-top:12px;">To do this, most plans identify specific "triggers", measurable conditions like a drought severity rating, a number of dry well reports, or a groundwater level, that move a county into a higher level of concern and set off a defined response, like distributing emergency water or expediting well permits.</p>
     </div>
     <div class="glossary">
@@ -130,6 +131,13 @@ TRIGGER_DATA.forEach(c => { dataByCounty[c.name.replace(" County","")] = c; });
 const map = L.map('map', { zoomControl: true }).setView([37.2, -119.3], 6);
 
 let activeLayer = null;
+
+function clearSelection() {
+  if (activeLayer) { activeLayer.setStyle(defaultStyle); activeLayer = null; }
+  const el = document.getElementById("detail");
+  el.innerHTML = "";
+  el.classList.remove("show");
+}
 const defaultStyle = { color:"#3b5a72", weight:1, fillColor:"#8fa8b3", fillOpacity:0.35 };
 const activeStyle = { color:"#8c5a2b", weight:2, fillColor:"#cfa15c", fillOpacity:0.5 };
 
@@ -138,7 +146,7 @@ function downloadAllCSV() {
   const rows = [headers];
   TRIGGER_DATA.forEach(c => {
     c.triggers.forEach(t => {
-      rows.push([c.name, t.indicator, t.threshold, t.stage, t.response, t.page]);
+      rows.push([c.name, t.indicator, t.threshold, t.stage, t.response, "p." + t.page]);
     });
   });
   const csv = rows.map(row =>
@@ -164,7 +172,7 @@ function downloadCountyCSV(name) {
   const headers = ["County", "Indicator", "Threshold", "Stage", "Response Action", "Page"];
   const rows = [headers];
   c.triggers.forEach(t => {
-    rows.push([c.name, t.indicator, t.threshold, t.stage, t.response, t.page]);
+    rows.push([c.name, t.indicator, t.threshold, t.stage, t.response, "p." + t.page]);
   });
   const csv = rows.map(row =>
     row.map(cell => {
@@ -221,7 +229,10 @@ function showDetail(name) {
   const key = name;
   const stageDef = STAGE_DEFS[key];
 
-  let html = "<h2>" + escapeHtml(c.name) + "</h2>";
+  let html = "<div style='border-top:1px solid rgba(255,255,255,.2); margin-top:6px; padding-top:16px;'></div>";
+  html += "<button onclick='clearSelection(); return false;' style='background:none; border:1px solid rgba(255,255,255,.3); color:#d7ddd9; font-size:11.5px; padding:5px 10px; border-radius:3px; cursor:pointer; margin-bottom:14px; font-family:\'Inter\',sans-serif;'>&larr; Back to all counties</button>";
+  html += "<h2>" + escapeHtml(c.name) + "</h2>";
+  html += "<div class='field-label' style='margin-top:10px;'>Drought Definition</div>";
   html += "<div class='def'>" + escapeHtml(c.definition) + "</div>";
   html += "<div class='source-link'><a href='#' onclick='downloadCountyCSV(" + JSON.stringify(c.name).replace(/"/g, "&quot;") + "); return false;'>Download this county's triggers (CSV) &darr;</a></div>";
 
@@ -234,7 +245,7 @@ function showDetail(name) {
     c.triggers.forEach(t => {
       html += "<div class='trig'>";
       html += "<div class='flow'><b style='color:#cfa15c;'>Indicator:</b> " + escapeHtml(t.indicator) + "</div>";
-      html += "<div class='flow' style='margin-top:5px;'><b style='color:#cfa15c;'>Threshold:</b> " + escapeHtml(t.threshold) + "</div>";
+      html += "<div class='flow' style='margin-top:5px;'><b style='color:#7ec8e3;'>Threshold:</b> " + escapeHtml(t.threshold) + "</div>";
       html += "<div class='resp'><b>Response action:</b> " + escapeHtml(t.response) + "</div>";
       html += "<div class='page'>Source: plan p." + escapeHtml(t.page) + "</div>";
       html += "</div>";
@@ -293,12 +304,12 @@ function showDetail(name) {
         html += "<div style='font-size:12px;color:#a9b6b0;margin-bottom:8px;font-style:italic;'>" + escapeHtml(sec.definition) + "</div>";
       }
       if (sec.type === "Baseline" && sec.items.length === 0) {
-        html += "<div class='stage-missing'>This is the plan's default/resting state. No specific measurable condition is required to enter it &mdash; the county returns here when no other stage's conditions are met.</div>";
+        html += "<div class='stage-missing'>This is the plan's default/resting state &mdash; no specific measurable condition is required to enter it. Routine monitoring or preparedness actions may still apply even though no emergency response is triggered.</div>";
       }
       sec.items.forEach(t => {
         html += "<div class='trig'>";
         html += "<div class='flow'><b style='color:#cfa15c;'>Indicator:</b> " + escapeHtml(t.indicator) + "</div>";
-        html += "<div class='flow' style='margin-top:5px;'><b style='color:#cfa15c;'>Threshold:</b> " + escapeHtml(t.threshold) + "</div>";
+        html += "<div class='flow' style='margin-top:5px;'><b style='color:#7ec8e3;'>Threshold:</b> " + escapeHtml(t.threshold) + "</div>";
         html += "<div class='resp'><b>Response action:</b> " + escapeHtml(t.response) + "</div>";
         html += "<div class='page'>Source: plan p." + escapeHtml(t.page) + "</div>";
         html += "</div>";
